@@ -1,0 +1,35 @@
+---
+title: "final"
+output: html_document
+author: "Haoran Gu"
+---
+```{r}
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(questionr)
+```
+
+
+```{r}
+main <- read.csv("COVID_Main.csv")
+
+race <- read.csv("COVID_Race.csv")
+```
+
+```{r}
+main.total = main %>% filter(main$State == "United States" & main$Group == "By Total" & main$Sex == "All Sexes")
+table((main %>% filter(main$State == "United States" & main$Group == "By Total" & main$Sex == "All Sexes"))$Age.Group)
+```
+
+
+```{r}
+ggplot(data = main.total) +
+  aes(x = COVID.19.Deaths, y = Age.Group, color = 'orange') +
+  geom_point() + geom_line()
+```
+
+```{r}
+qplot(Total.Deaths, data = main.total, facets = ~Age.Group)
+```
+
