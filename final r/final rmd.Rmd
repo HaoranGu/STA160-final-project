@@ -71,3 +71,55 @@ ggplot(main.age, aes(Age.Group, Influenza.Deaths/Total.In, fill = Sex)) + geom_c
   labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for Influenza deaths") 
 ```
 
+
+```{r}
+vaccine <- read.csv("vaccine.csv")
+```
+
+```{r}
+main.state = main %>% filter(Age.Group == "All Ages" & Group == "By Total" & Sex != "All Sexes" & State != "United States") %>% 
+  group_by(Sex) %>% 
+  count(COVID.19.Deaths,Pneumonia.Deaths,Influenza.Deaths, Total.Deaths, State) %>% 
+  mutate(Total.td = sum(Total.Deaths),
+         Total.19 = sum(COVID.19.Deaths),
+         Total.Pn = sum(Pneumonia.Deaths),
+         Total.In = sum(Influenza.Deaths))
+```
+
+```{r}
+ggplot(main.state, aes(State, Total.Deaths/Total.td, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "State", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for total deaths") 
+
+```
+
+```{r}
+ggplot(main.state, aes(State, COVID.19.Deaths/Total.19, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "State", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for COVID-19 deaths") 
+```
+
+```{r}
+ggplot(main.state, aes(State, Pneumonia.Deaths/Total.Pn, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "State", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for Pneumonia deaths") 
+```
+```{r}
+vaccine$X1st.Dose.Allocations <- as.numeric(gsub(",","",vaccine$X1st.Dose.Allocations))
+vaccine$X2nd.Dose.Allocations <- as.numeric(gsub(",","",vaccine$X2nd.Dose.Allocations))
+vaccine$Jurisdiction <- as.character(vaccine$Jurisdiction)
+```
+
+```{r}
+vaccine.total = vaccine %>%
+  mutate(Total.Dose = X1st.Dose.Allocations + X2nd.Dose.Allocations) %>%
+  group_by(Jurisdiction) %>%
+  summarize(Total.Dose = sum(Total.Dose, na.rm = TRUE))
+  
+```
+
+```{r}
+ggplot(vaccine.total, aes(Jurisdiction, Total.Dose)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "Jurisdiction", y = "Total Number of Doses", title = "COVID-19 Vaccine Distribution Allocations by Jurisdiction") 
+```
