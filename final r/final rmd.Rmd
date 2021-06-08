@@ -24,12 +24,50 @@ table((main %>% filter(main$State == "United States" & main$Group == "By Total" 
 
 
 ```{r}
-ggplot(data = main.total) +
-  aes(x = COVID.19.Deaths, y = Age.Group, color = 'orange') +
-  geom_point() + geom_line()
+
+
+ggplot(data=main.total, aes(x = Total.Deaths, y = Age.Group)) +
+  geom_bar(stat="identity")
 ```
 
 ```{r}
-qplot(Total.Deaths, data = main.total, facets = ~Age.Group)
+qplot(Total.Deaths, data = main.total, facets = ~Age.Group, bins = 20) + coord_flip()
+```
+
+```{r}
+main.age = main %>% filter(State == "United States" & Group == "By Total" & Sex != "All Sexes" & Age.Group != "All Ages") %>% 
+  group_by(Sex) %>% 
+  count(COVID.19.Deaths,Pneumonia.Deaths,Influenza.Deaths, Total.Deaths, Age.Group) %>% 
+  mutate(Total.td = sum(Total.Deaths),
+         Total.19 = sum(COVID.19.Deaths),
+         Total.Pn = sum(Pneumonia.Deaths),
+         Total.In = sum(Influenza.Deaths))
+
+```
+
+```{r}
+ggplot(main.age, aes(Age.Group, Total.Deaths/Total.td, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for total deaths") 
+
+
+
+
+
+```
+```{r}
+ggplot(main.age, aes(Age.Group, COVID.19.Deaths/Total.19, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for COVID-19 deaths") 
+```
+```{r}
+ggplot(main.age, aes(Age.Group, Pneumonia.Deaths/Total.Pn, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for Pneumonia deaths") 
+```
+```{r}
+ggplot(main.age, aes(Age.Group, Influenza.Deaths/Total.In, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for Influenza deaths") 
 ```
 
