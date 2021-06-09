@@ -2,8 +2,8 @@
 title: "final"
 author: "Haoran Gu"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 ```{r}
 library(tidyverse)
@@ -24,6 +24,7 @@ race <- read.csv("COVID_Race.csv")
 
 
 ```{r fig.height = 10}
+main.total = main %>% filter(State == "United States" & Group == "By Total" & Sex != "All Sexes")
 main.total1 = main.total %>% filter(Age.Group != "All Ages" & Age.Group !="0-17 years")
 
 tt <- ggplot(data = main.total1, aes(x = Total.Deaths, y = Age.Group)) +
@@ -127,8 +128,11 @@ race.count = race %>% filter(Group == "By Month" & State == "United States" & In
                       
 
 race.dist = race %>% filter(Group == "By Month" & State == "United States" & Indicator == "Weighted distribution of population (%)") %>% 
-                      select(-Data.as.of, -Start.Date, -End.Date)
+                      select(-Data.as.of, -Start.Date, -End.Date) %>% 
+                      mutate(Month.Year = paste(Year, Month, sep = "/")) %>% 
+                      arrange(Year, Month)
 ```
+
 
 ```{r fig.height = 14}
 nhw <- ggplot(data = race.count, aes(Month.Year, Non.Hispanic.White)) +
@@ -151,11 +155,11 @@ nhn <- ggplot(data = race.count, aes(Month.Year, Non.Hispanic.Native.Hawaiian.or
   labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Non Hispanic Native Hawaiian or Other Pacific Islander of COVID-19") +
   geom_col()
 
-nhm <- ggplot(data = race.count, aes(Month.Year, race.count$Non.Hispanic.more.than.one.race)) +
+nhm <- ggplot(data = race.count, aes(Month.Year, Non.Hispanic.more.than.one.race)) +
   labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Non Hispanic more than one race of COVID-19") +
   geom_col()
 
-hl <- ggplot(data = race.count, aes(Month.Year, race.count$Hispanic.or.Latino)) +
+hl <- ggplot(data = race.count, aes(Month.Year, Hispanic.or.Latino)) +
   labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Hispanic or Latino more than one race of COVID-19") +
   geom_col()
 
@@ -164,6 +168,39 @@ ggarrange(nhw,nhb,nhaa,nha,nhn,nhm, hl,
                     ncol = 2, nrow = 4)
 ```
 
+```{r fig.height = 14}
+nhw <- ggplot(data = race.dist, aes(Month.Year, Non.Hispanic.White)) +
+  labs(x = "Year/Month", y = "Percentage of Deaths", title = "Deaths distribution for Non Hispanic White of COVID-19") +
+  geom_col()
+
+nhb <- ggplot(data = race.dist, aes(Month.Year, Non.Hispanic.Black.or.African.American)) +
+  labs(x = "Year/Month", y = "Percentage of Deaths", title = "Deaths distribution for Non Hispanic Black or African.American of COVID-19") +
+  geom_col()
+
+nhaa <- ggplot(data = race.dist, aes(Month.Year, Non.Hispanic.American.Indian.or.Alaska.Native)) +
+  labs(x = "Year/Month", y = "Percentage of Deaths", title = "Deaths distribution for Non Hispanic American Indian or Alaska Native of COVID-19") +
+  geom_col()
+
+nha <- ggplot(data = race.dist, aes(Month.Year, Non.Hispanic.Asian)) +
+  labs(x = "Year/Month", y = "Percentage of Deaths", title = "Deaths distribution for Non Hispanic Asian of COVID-19") +
+  geom_col()
+
+nhn <- ggplot(data = race.dist, aes(Month.Year, Non.Hispanic.Native.Hawaiian.or.Other.Pacific.Islander)) +
+  labs(x = "Year/Month", y = "Percentage of Deaths", title = "Deaths distribution for Non Hispanic Native Hawaiian or Other Pacific Islander of COVID-19") +
+  geom_col()
+
+nhm <- ggplot(data = race.dist, aes(Month.Year, Non.Hispanic.more.than.one.race)) +
+  labs(x = "Year/Month", y = "Percentage of Deaths", title = "Deaths distribution for Non Hispanic more than one race of COVID-19") +
+  geom_col()
+
+hl <- ggplot(data = race.dist, aes(Month.Year, Hispanic.or.Latino)) +
+  labs(x = "Year/Month", y = "Percentage of Deaths", title = "Deaths distribution for Hispanic or Latino more than one race of COVID-19") +
+  geom_col()
+
+ggarrange(nhw,nhb,nhaa,nha,nhn,nhm, hl,
+                    labels = c("A", "B", "C", "D", "E", "F", "G"),
+                    ncol = 2, nrow = 4)
+```
 
 
 
