@@ -1,6 +1,6 @@
 ---
 title: "final"
-author: "Haoran Gu"
+author: "Haoran Gu and Jingcong Jiang"
 output:
   html_document: default
   pdf_document: default
@@ -16,6 +16,8 @@ library(ggpubr)
 
 ```{r}
 main <- read.csv("COVID_Main.csv")
+
+main[is.na(main)] <- 0
 
 race <- read.csv("COVID_Race.csv")
 ```
@@ -200,6 +202,147 @@ hl <- ggplot(data = race.dist, aes(Month.Year, Hispanic.or.Latino)) +
 ggarrange(nhw,nhb,nhaa,nha,nhn,nhm, hl,
                     labels = c("A", "B", "C", "D", "E", "F", "G"),
                     ncol = 2, nrow = 4)
+```
+
+
+
+
+
+
+
+###############################################################################
+
+
+
+
+```{r}
+vaccine <- read.csv("vaccine.csv")
+```
+
+```{r}
+main.state = main %>% filter(Age.Group == "All Ages" & Group == "By Total" & Sex != "All Sexes" & State != "United States") 
+
+tt.state <- ggplot(data = main.state, aes(x = Total.Deaths, y = State)) +
+  xlab("Death counts") + ylab("State") + ggtitle("Deaths of all kinds in different states") +
+  geom_bar(stat="identity")
+cv.state <-ggplot(data = main.state, aes(x = COVID.19.Deaths, y = State)) +
+  xlab("Death counts") + ylab("State") + ggtitle("Deaths of COVID-19 in different states") +
+  geom_bar(stat="identity")
+pn.state <- ggplot(data = main.state, aes(x = Pneumonia.Deaths, y = State)) +
+  xlab("Death counts") + ylab("State") + ggtitle("Deaths of Pneumonia in different states") +
+  geom_bar(stat="identity")
+In.state <- ggplot(data = main.state, aes(x = Influenza.Deaths, y = State)) +
+  xlab("Death counts") + ylab("State") + ggtitle("Deaths of Influenza in different states") +
+  geom_bar(stat="identity")
+
+```
+
+```{r}
+tt.state
+```
+
+```{r}
+cv.state
+```
+
+
+```{r}
+main.sex.state = main %>% filter(State != "United States" & Group == "By Total" & Sex != "All Sexes" & Age.Group == "All Ages", na.rm = TRUE) %>% 
+  group_by(Sex) %>% 
+  count(COVID.19.Deaths,Pneumonia.Deaths,Influenza.Deaths, Total.Deaths, State) %>% 
+  mutate(Total.td = sum(Total.Deaths),
+         Total.19 = sum(COVID.19.Deaths)) %>% 
+  mutate(Total.Deaths = ifelse(Sex == "Male", 0 - Total.Deaths, Total.Deaths),
+         COVID.19.Deaths = ifelse(Sex == "Male", 0 - COVID.19.Deaths, COVID.19.Deaths))
+
+```
+
+```{r}
+tt.ss <- ggplot(main.sex.state, aes(State, Total.Deaths, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") +
+  scale_y_continuous(breaks = seq(-1000000, 1000000, 250000))+ 
+  labs(x = "State", y = "Deaths Counts", fill = "Sex", title = "Population Pyramid for total deaths by states")
+tt.ss
+```
+
+```{r}
+cv.ss <- ggplot(main.sex.state, aes(State, COVID.19.Deaths, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") +
+  scale_y_continuous(breaks = seq(-1000000, 1000000, 250000))+ 
+  labs(x = "State", y = "Deaths Counts", fill = "Sex", title = "Population Pyramid for COVID-19 deaths by states")
+cv.ss
+```
+
+
+```{r}
+tt.sss <- ggplot(main.sex.state, aes(State, Total.Deaths/Total.td, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  scale_y_continuous(breaks = seq(-.25, .25, .05), 
+                     labels = c("25%","20%","15%", "10%","5%", "0","5%", "10%","15%","20%", "25%")) +
+  labs(x = "State", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for total deaths by states")
+tt.sss
+```
+
+```{r}
+cv.sss <- ggplot(main.sex.state, aes(State, COVID.19.Deaths/Total.19, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  scale_y_continuous(breaks = seq(-.25, .25, .05), 
+                     labels = c("25%","20%","15%", "10%","5%", "0","5%", "10%","15%","20%", "25%")) +
+  labs(x = "State", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for COVID-19 deaths by states")
+cv.sss
+```
+
+
+```{r}
+vaccine$X1st.Dose.Allocations <- as.numeric(gsub(",","",vaccine$X1st.Dose.Allocations))
+vaccine$X2nd.Dose.Allocations <- as.numeric(gsub(",","",vaccine$X2nd.Dose.Allocations))
+vaccine$Jurisdiction <- as.character(vaccine$Jurisdiction)
+```
+
+```{r}
+vaccine.total = vaccine %>%
+  mutate(Total.Dose = X1st.Dose.Allocations + X2nd.Dose.Allocations) %>%
+  rename(State = Jurisdiction) %>%
+  group_by(State) %>%
+  summarize(Total.Dose = sum(Total.Dose, na.rm = TRUE))
+
+vaccine.total = vaccine.total[-c(3,7,12,15,25,26,30,47,49,56),]
+```
+
+```{r}
+ggplot(vaccine.total, aes(State, Total.Dose)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "State", y = "Total Number of Doses", title = "COVID-19 Vaccine Distribution Allocations by State") 
+```
+
+```{r}
+main.state1 = main %>% filter(Age.Group == "All Ages" & Group == "By Total" & Sex == "All Sexes" & State != "United States") %>% 
+  group_by(State) %>% 
+  count(COVID.19.Deaths,State)
+```
+
+
+```{r}
+vaccine.total = vaccine.total %>% 
+  full_join(main.state1, by = "State") %>%
+  mutate(ratio = Total.Dose / COVID.19.Deaths)
+```
+
+```{r}
+plot(vaccine.total$COVID.19.Deaths, vaccine.total$Total.Dose, main="Scatterplot of COVID-19 Deaths vs Vaccine Distribution Allocations across states", 
+   xlab="COVID-19 Deaths", ylab="COVID-19 Vaccine Distribution Allocations", pch=19)
+
+abline(lm(vaccine.total$Total.Dose ~ vaccine.total$COVID.19.Deaths, data = vaccine.total), col = "blue")
+```
+```{r}
+cor(vaccine.total$COVID.19.Deaths, vaccine.total$Total.Dose)
+```
+
+
+```{r}
+ggplot(vaccine.total, aes(State, ratio)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "State", y = "Ratio", title = "COVID-19 Vaccine Distribution Allocations vs Deaths") 
 ```
 
 
