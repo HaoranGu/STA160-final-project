@@ -1,13 +1,16 @@
 ---
 title: "final"
-output: html_document
 author: "Haoran Gu"
+output:
+  pdf_document: default
+  html_document: default
 ---
 ```{r}
 library(tidyverse)
 library(dplyr)
 library(knitr)
 library(questionr)
+library(ggpubr)
 ```
 
 
@@ -17,109 +20,150 @@ main <- read.csv("COVID_Main.csv")
 race <- read.csv("COVID_Race.csv")
 ```
 
-```{r}
-main.total = main %>% filter(main$State == "United States" & main$Group == "By Total" & main$Sex == "All Sexes")
-table((main %>% filter(main$State == "United States" & main$Group == "By Total" & main$Sex == "All Sexes"))$Age.Group)
-```
 
 
-```{r}
 
+```{r fig.height = 10}
+main.total1 = main.total %>% filter(Age.Group != "All Ages" & Age.Group !="0-17 years")
 
-ggplot(data=main.total, aes(x = Total.Deaths, y = Age.Group)) +
+tt <- ggplot(data = main.total1, aes(x = Total.Deaths, y = Age.Group)) +
+  xlab("Death counts") + ylab("Age Groups") + ggtitle("Deaths of all kinds in United States from 2020/01 to 2021/05") +
   geom_bar(stat="identity")
+cv <-ggplot(data = main.total1, aes(x = COVID.19.Deaths, y = Age.Group)) +
+  xlab("Death counts") + ylab("Age Groups") + ggtitle("Deaths of COVID-19 in United States from 2020/01 to 2021/05") +
+  geom_bar(stat="identity")
+pn <- ggplot(data = main.total1, aes(x = Pneumonia.Deaths, y = Age.Group)) +
+  xlab("Death counts") + ylab("Age Groups") + ggtitle("Deaths of Pneumonia in United States from 2020/01 to 2021/05") +
+  geom_bar(stat="identity")
+In <- ggplot(data = main.total1, aes(x = Influenza.Deaths, y = Age.Group)) +
+  xlab("Death counts") + ylab("Age Groups") + ggtitle("Deaths of Influenza in United States from 2020/01 to 2021/05") +
+  geom_bar(stat="identity")
+
+ggarrange(tt,cv,pn,In,
+                    labels = c("A", "B", "C", "D"),
+                    ncol = 2, nrow = 2)
 ```
 
-```{r}
-qplot(Total.Deaths, data = main.total, facets = ~Age.Group, bins = 20) + coord_flip()
-```
 
 ```{r}
-main.age = main %>% filter(State == "United States" & Group == "By Total" & Sex != "All Sexes" & Age.Group != "All Ages") %>% 
+main.age = main %>% filter(State == "United States" & Group == "By Total" & Sex != "All Sexes" & Age.Group != "All Ages" & Age.Group!= "0-17 years") %>% 
   group_by(Sex) %>% 
   count(COVID.19.Deaths,Pneumonia.Deaths,Influenza.Deaths, Total.Deaths, Age.Group) %>% 
   mutate(Total.td = sum(Total.Deaths),
          Total.19 = sum(COVID.19.Deaths),
          Total.Pn = sum(Pneumonia.Deaths),
-         Total.In = sum(Influenza.Deaths))
-
+         Total.In = sum(Influenza.Deaths)) %>% 
+  mutate(Total.Deaths = ifelse(Sex == "Male", 0 - Total.Deaths, Total.Deaths),
+         COVID.19.Deaths = ifelse(Sex == "Male", 0 - COVID.19.Deaths, COVID.19.Deaths),
+         Pneumonia.Deaths = ifelse(Sex == "Male", 0 - Pneumonia.Deaths, Pneumonia.Deaths),
+         Influenza.Deaths = ifelse(Sex == "Male", 0 - Influenza.Deaths, Influenza.Deaths))
 ```
 
-```{r}
-ggplot(main.age, aes(Age.Group, Total.Deaths/Total.td, fill = Sex)) + geom_col() + 
+```{r fig.height= 10}
+tts <- ggplot(main.age, aes(Age.Group, Total.Deaths, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") +
+  scale_y_continuous(breaks = seq(-1000000, 1000000, 250000))+ 
+  labs(x = "Age", y = "Deaths Counts", fill = "Sex", title = "Population Pyramid for total deaths")
+
+cvs <- ggplot(main.age, aes(Age.Group, COVID.19.Deaths, fill = Sex)) + geom_col() + 
   coord_flip() + scale_fill_brewer(palette = "Set1") + 
-  labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for total deaths") 
+  labs(x = "Age", y = "Deaths Counts", fill = "Sex", title = "Population Pyramid for COVID-19 deaths")
 
+pns <- ggplot(main.age, aes(Age.Group, Pneumonia.Deaths, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "Age", y = "Deaths Counts", fill = "Sex", title = "Population Pyramid for Pneumonia deaths") 
 
+Ins <- ggplot(main.age, aes(Age.Group, Influenza.Deaths, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  labs(x = "Age", y = "Deaths Counts", fill = "Sex", title = "Population Pyramid for Influenza deaths") 
 
-
-
+ggarrange(tts,cvs,pns,Ins,
+                    labels = c("A", "B", "C", "D"),
+                    ncol = 2, nrow = 2)
 ```
-```{r}
-ggplot(main.age, aes(Age.Group, COVID.19.Deaths/Total.19, fill = Sex)) + geom_col() + 
+
+
+
+```{r fig.height= 10}
+tts1 <- ggplot(main.age, aes(Age.Group, Total.Deaths/Total.td, fill = Sex)) + geom_col() + 
   coord_flip() + scale_fill_brewer(palette = "Set1") + 
-  labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for COVID-19 deaths") 
-```
-```{r}
-ggplot(main.age, aes(Age.Group, Pneumonia.Deaths/Total.Pn, fill = Sex)) + geom_col() + 
+  scale_y_continuous(breaks = seq(-.25, .25, .05), 
+                     labels = c("25%","20%","15%", "10%","5%", "0","5%", "10%","15%","20%", "25%")) +
+  labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for total deaths")
+
+cvs1 <- ggplot(main.age, aes(Age.Group, COVID.19.Deaths/Total.19, fill = Sex)) + geom_col() + 
   coord_flip() + scale_fill_brewer(palette = "Set1") + 
+  scale_y_continuous(breaks = seq(-.25, .25, .05), 
+                     labels = c("25%","20%","15%", "10%","5%", "0","5%", "10%","15%","20%", "25%")) +
+  labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for COVID-19 deaths")
+
+pns1 <- ggplot(main.age, aes(Age.Group, Pneumonia.Deaths/Total.Pn, fill = Sex)) + geom_col() + 
+  coord_flip() + scale_fill_brewer(palette = "Set1") + 
+   scale_y_continuous(breaks = seq(-.25, .25, .05), 
+                     labels = c("25%","20%","15%", "10%","5%", "0","5%", "10%","15%","20%", "25%")) +
   labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for Pneumonia deaths") 
-```
-```{r}
-ggplot(main.age, aes(Age.Group, Influenza.Deaths/Total.In, fill = Sex)) + geom_col() + 
+
+Ins1 <- ggplot(main.age, aes(Age.Group, Influenza.Deaths/Total.In, fill = Sex)) + geom_col() + 
   coord_flip() + scale_fill_brewer(palette = "Set1") + 
+   scale_y_continuous(breaks = seq(-.25, .25, .05), 
+                     labels = c("25%","20%","15%", "10%","5%", "0","5%", "10%","15%","20%", "25%")) +
   labs(x = "Age", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for Influenza deaths") 
+
+ggarrange(tts1,cvs1,pns1,Ins1,
+                    labels = c("A", "B", "C", "D"),
+                    ncol = 2, nrow = 2)
 ```
 
 
-```{r}
-vaccine <- read.csv("vaccine.csv")
-```
 
-```{r}
-main.state = main %>% filter(Age.Group == "All Ages" & Group == "By Total" & Sex != "All Sexes" & State != "United States") %>% 
-  group_by(Sex) %>% 
-  count(COVID.19.Deaths,Pneumonia.Deaths,Influenza.Deaths, Total.Deaths, State) %>% 
-  mutate(Total.td = sum(Total.Deaths),
-         Total.19 = sum(COVID.19.Deaths),
-         Total.Pn = sum(Pneumonia.Deaths),
-         Total.In = sum(Influenza.Deaths))
-```
+
 
 ```{r}
-ggplot(main.state, aes(State, Total.Deaths/Total.td, fill = Sex)) + geom_col() + 
-  coord_flip() + scale_fill_brewer(palette = "Set1") + 
-  labs(x = "State", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for total deaths") 
+# Race 
+race.count = race %>% filter(Group == "By Month" & State == "United States" & Indicator == "Count of COVID-19 deaths") %>% 
+                      select(-Data.as.of, -Start.Date, -End.Date) %>% 
+                      mutate(Month.Year = paste(Year, Month, sep = "/")) %>% 
+                      arrange(Year, Month)
+                      
 
-```
-
-```{r}
-ggplot(main.state, aes(State, COVID.19.Deaths/Total.19, fill = Sex)) + geom_col() + 
-  coord_flip() + scale_fill_brewer(palette = "Set1") + 
-  labs(x = "State", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for COVID-19 deaths") 
-```
-
-```{r}
-ggplot(main.state, aes(State, Pneumonia.Deaths/Total.Pn, fill = Sex)) + geom_col() + 
-  coord_flip() + scale_fill_brewer(palette = "Set1") + 
-  labs(x = "State", y = "Percent of Population", fill = "Sex", title = "Population Pyramid for Pneumonia deaths") 
-```
-```{r}
-vaccine$X1st.Dose.Allocations <- as.numeric(gsub(",","",vaccine$X1st.Dose.Allocations))
-vaccine$X2nd.Dose.Allocations <- as.numeric(gsub(",","",vaccine$X2nd.Dose.Allocations))
-vaccine$Jurisdiction <- as.character(vaccine$Jurisdiction)
+race.dist = race %>% filter(Group == "By Month" & State == "United States" & Indicator == "Weighted distribution of population (%)") %>% 
+                      select(-Data.as.of, -Start.Date, -End.Date)
 ```
 
-```{r}
-vaccine.total = vaccine %>%
-  mutate(Total.Dose = X1st.Dose.Allocations + X2nd.Dose.Allocations) %>%
-  group_by(Jurisdiction) %>%
-  summarize(Total.Dose = sum(Total.Dose, na.rm = TRUE))
-  
+```{r fig.height = 14}
+nhw <- ggplot(data = race.count, aes(Month.Year, Non.Hispanic.White)) +
+  labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Non Hispanic White of COVID-19") +
+  geom_col()
+
+nhb <- ggplot(data = race.count, aes(Month.Year, Non.Hispanic.Black.or.African.American)) +
+  labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Non Hispanic Black or African.American of COVID-19") +
+  geom_col()
+
+nhaa <- ggplot(data = race.count, aes(Month.Year, Non.Hispanic.American.Indian.or.Alaska.Native)) +
+  labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Non Hispanic American Indian or Alaska Native of COVID-19") +
+  geom_col()
+
+nha <- ggplot(data = race.count, aes(Month.Year, Non.Hispanic.Asian)) +
+  labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Non Hispanic Asian of COVID-19") +
+  geom_col()
+
+nhn <- ggplot(data = race.count, aes(Month.Year, Non.Hispanic.Native.Hawaiian.or.Other.Pacific.Islander)) +
+  labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Non Hispanic Native Hawaiian or Other Pacific Islander of COVID-19") +
+  geom_col()
+
+nhm <- ggplot(data = race.count, aes(Month.Year, race.count$Non.Hispanic.more.than.one.race)) +
+  labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Non Hispanic more than one race of COVID-19") +
+  geom_col()
+
+hl <- ggplot(data = race.count, aes(Month.Year, race.count$Hispanic.or.Latino)) +
+  labs(x = "Year/Month", y = "Number of Deaths", title = "Deaths counts for Hispanic or Latino more than one race of COVID-19") +
+  geom_col()
+
+ggarrange(nhw,nhb,nhaa,nha,nhn,nhm, hl,
+                    labels = c("A", "B", "C", "D", "E", "F", "G"),
+                    ncol = 2, nrow = 4)
 ```
 
-```{r}
-ggplot(vaccine.total, aes(Jurisdiction, Total.Dose)) + geom_col() + 
-  coord_flip() + scale_fill_brewer(palette = "Set1") + 
-  labs(x = "Jurisdiction", y = "Total Number of Doses", title = "COVID-19 Vaccine Distribution Allocations by Jurisdiction") 
-```
+
+
+
